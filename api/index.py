@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import json
 import numpy as np
 from pathlib import Path
+from functools import lru_cache
 
 app = FastAPI()
 
@@ -21,14 +22,14 @@ class MetricsRequest(BaseModel):
     threshold_ms: int
 
 # Load data from JSON file
-def load_data():
+@lru_cache()
+def get_data():
     data_path = Path(__file__).parent / "q-vercel-latency.json"
     with open(data_path, 'r') as f:
         return json.load(f)
 
 @app.post("/metrics")
-async def calculate_metrics(request: MetricsRequest):
-    data = load_data()
+async def calculate_metrics(request: MetricsRequest, data: list = Depends(get_data)):
     result = {}
 
     for region in request.regions:
